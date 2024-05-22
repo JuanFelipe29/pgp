@@ -66,8 +66,8 @@ class ConsultaSQLView(APIView):
                 data = []
                 for row in paginated_data:
                     data.append({
-                        'funcion': row[0],
-                        'tip_tercero': row[1],
+                        'function': row[0],
+                        'tercero': row[1],
                         'tipo_doc': row[2],
                         'numero_doc': row[3],
                         'documento_contrato': row[4],
