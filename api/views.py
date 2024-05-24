@@ -3,6 +3,8 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.pagination import PageNumberPagination
 from django.db import connection
+from django.db import transaction
+from rest_framework import status
 
 class CustomPagination(PageNumberPagination):
     page_size = 10
@@ -87,17 +89,21 @@ class ConsultaSQLView(APIView):
         
     def post(self, request):
         try:
-            cita = int(request.data.get('cita'))
-            estado = int(request.data.get('estado', 0))  # Default estado to 0 if not provided
-            fecha_registro = datetime.now().strftime('%Y-%m-%d %H:%M:%S')  # Current date in YYYY-MM-DD format
+            registros = request.data  
 
-            with connection.cursor() as cursor:
-                cursor.execute("""
-                    INSERT INTO Reportado (cita, estado, fecha_registro)
-                    VALUES (%s, %s, %s)
-                """, (cita, estado, fecha_registro))
+            with transaction.atomic():  
+                for registro in registros:
+                    cita = int(registro.get('cita'))
+                    estado = int(registro.get('estado', 0))  
+                    fecha_registro = datetime.now().strftime('%Y-%m-%d %H:%M:%S')  # Fecha y hora actual
 
-            return Response({'message': 'Registro insertado correctamente'}, status=201)
+                    with connection.cursor() as cursor:
+                        cursor.execute("""
+                            INSERT INTO Reportado (cita, estado, fecha_registro)
+                            VALUES (%s, %s, %s)
+                        """, (cita, estado, fecha_registro))
+
+            return Response({'message': 'Registros insertados correctamente'}, status=201)
 
         except Exception as e:
             return Response({'error': str(e)}, status=500)
@@ -184,23 +190,20 @@ class ListarReportadosView(APIView):
         except Exception as e:
             return Response({'error': str(e)}, status=500)
         
-class ServicioXAmbitoCRUD(APIView):
+class ServicioXAmbitoListAPIView(APIView):
     pagination_class = CustomPagination
 
     def get(self, request):
         try:
             with connection.cursor() as cursor:
                 cursor.execute("""
-                    SELECT id, CodigoRef, tipo, ambito, estado 
+                    SELECT id, CodigoRef, tipo, ambito, estado
                     FROM servicioxambito
                     WHERE estado = 1
                 """)
                 rows = cursor.fetchall()
-
-                 # Obtener la instancia de paginación
                 paginator = self.pagination_class()
                 paginated_data = paginator.paginate_queryset(rows, request)
-
                 data = []
                 for row in paginated_data:
                     data.append({
@@ -210,30 +213,27 @@ class ServicioXAmbitoCRUD(APIView):
                         'ambito': row[3],
                         'estado': row[4]
                     })
-
                 return paginator.get_paginated_response(data)
-
         except Exception as e:
-            return Response({'error': str(e)}, status=500)
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+class ServicioXAmbitoCreateAPIView(APIView):
     def post(self, request):
         try:
             CodigoRef = request.data.get('CodigoRef')
             tipo = request.data.get('tipo')
             ambito = request.data.get('ambito')
             estado = request.data.get('estado')
-
             with connection.cursor() as cursor:
                 cursor.execute("""
                     INSERT INTO servicioxambito (CodigoRef, tipo, ambito, estado)
                     VALUES (%s, %s, %s, %s)
                 """, (CodigoRef, tipo, ambito, estado))
-
-            return Response({'message': 'Registro insertado correctamente'}, status=201)
-
+            return Response({'message': 'Registro insertado correctamente'}, status=status.HTTP_201_CREATED)
         except Exception as e:
-            return Response({'error': str(e)}, status=500)
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+class ServicioXAmbitoUpdateAPIView(APIView):
     def put(self, request):
         try:
             id = int(request.data.get('id'))
@@ -241,30 +241,37 @@ class ServicioXAmbitoCRUD(APIView):
             tipo = request.data.get('tipo')
             ambito = request.data.get('ambito')
             estado = request.data.get('estado')
-
             with connection.cursor() as cursor:
                 cursor.execute("""
                     UPDATE servicioxambito
                     SET CodigoRef = %s, tipo = %s, ambito = %s, estado = %s
                     WHERE id = %s
                 """, (CodigoRef, tipo, ambito, estado, id))
-
-            return Response({'message': 'Registro actualizado correctamente'}, status=200)
-
+            return Response({'message': 'Registro actualizado correctamente'}, status=status.HTTP_200_OK)
         except Exception as e:
-            return Response({'error': str(e)}, status=500)
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-    def delete(self, request):
+class ServicioXAmbitoDetailAPIView(APIView):
+    def get(self, request, pk):
         try:
-            id = int(request.data.get('id'))
-
             with connection.cursor() as cursor:
                 cursor.execute("""
-                    DELETE FROM servicioxambito
+                    SELECT id, CodigoRef, tipo, ambito, estado
+                    FROM servicioxambito
                     WHERE id = %s
-                """, (id,))
-
-            return Response({'message': 'Registro eliminado correctamente'}, status=200)
-
+                """, [pk])
+                row = cursor.fetchone()
+                if row:
+                    data = {
+                        'id': row[0],
+                        'CodigoRef': row[1],
+                        'tipo': row[2],
+                        'ambito': row[3],
+                        'estado': row[4]
+                    }
+                    return Response(data)
+                else:
+                    return Response({'error': 'Registro no encontrado'}, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
-            return Response({'error': str(e)}, status=500)
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+

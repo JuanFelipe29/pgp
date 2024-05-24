@@ -1,0 +1,4 @@
+1. crear entrono virtual = python -m venv env
+2. activar = env\Scripts\activate
+3. instalar paquetes = pip install -r requirements.txt
+4. iniciar servidor = py manage.py runserver

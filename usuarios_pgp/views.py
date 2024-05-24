@@ -15,10 +15,8 @@ class CustomPagination(PageNumberPagination):
     page_size_query_param = 'page_size'
     max_page_size = 1000
 
-class UsuarioPgpAPIView(APIView): 
-    #authentication_classes = []  # Utiliza la autenticación por sesión.
+class UsuarioPgpListAPIView(APIView):
     pagination_class = CustomPagination
-     
 
     def get(self, request):
         try:
@@ -26,39 +24,34 @@ class UsuarioPgpAPIView(APIView):
                 cursor.execute("SELECT * FROM usuarios_pgp")
                 rows = cursor.fetchall()
                 columns = [col[0] for col in cursor.description]
-
-            usuarios = [dict(zip(columns, row)) for row in rows]
-
-            paginator = self.pagination_class()
-            paginated_data = paginator.paginate_queryset(usuarios, request)
-
-            return paginator.get_paginated_response(paginated_data)
-
+                usuarios = [dict(zip(columns, row)) for row in rows]
+                paginator = self.pagination_class()
+                paginated_data = paginator.paginate_queryset(usuarios, request)
+                return paginator.get_paginated_response(paginated_data)
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+class UsuarioPgpCreateAPIView(APIView):
     def post(self, request):
         data = request.data
         data['clave'] = make_password(data['clave'])
-        
         try:
             with connection.cursor() as cursor:
                 cursor.execute(
                     '''
-                    INSERT INTO usuarios_pgp (nombre_largo, usuario, clave, rol ,estado, fecha_de_creacion)
-                    VALUES (%s, %s, %s, %s, %s ,CURRENT_TIMESTAMP)
+                    INSERT INTO usuarios_pgp (nombre_largo, usuario, clave, rol, estado, fecha_de_creacion)
+                    VALUES (%s, %s, %s, %s, %s, CURRENT_TIMESTAMP)
                     ''',
                     [data['nombre_largo'], data['usuario'], data['clave'], data['rol'], data['estado']]
                 )
-            return Response(data, status=status.HTTP_201_CREATED)
-
+                return Response(data, status=status.HTTP_201_CREATED)
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
+class UsuarioPgpUpdateAPIView(APIView):
     def put(self, request, pk):
         data = request.data
         data['clave'] = make_password(data['clave'])
-        
         try:
             with connection.cursor() as cursor:
                 cursor.execute(
@@ -69,19 +62,25 @@ class UsuarioPgpAPIView(APIView):
                     ''',
                     [data['nombre_largo'], data['usuario'], data['clave'], data['estado'], pk]
                 )
-            return Response(data)
-
+                return Response(data)
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
-    def delete(self, request, pk):
+class UsuarioPgpDetailAPIView(APIView):
+    def get(self, request, pk):
         try:
             with connection.cursor() as cursor:
-                cursor.execute("DELETE FROM usuarios_pgp WHERE id = %s", [pk])
-            return Response(status=status.HTTP_204_NO_CONTENT)
-
+                cursor.execute("SELECT * FROM usuarios_pgp WHERE id = %s", [pk])
+                row = cursor.fetchone()
+                if row:
+                    columns = [col[0] for col in cursor.description]
+                    usuario = dict(zip(columns, row))
+                    return Response(usuario)
+                else:
+                    return Response({'error': 'Usuario no encontrado'}, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
-            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 
 class CustomUser:
     def __init__(self, id, username):
