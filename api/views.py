@@ -21,7 +21,7 @@ class ConsultaSQLView(APIView):
                 cursor.execute("""
                     SELECT DISTINCT 
                         'inserta_registro_pgp' AS funcion,
-                        '9010126816' AS tip_tercero,
+                        '901012681' AS tip_tercero,
                         p.tipoid AS tipo_doc,
                         p.identificacion AS numero_doc,
                         CASE eps.nit 
