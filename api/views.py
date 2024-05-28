@@ -5,6 +5,8 @@ from rest_framework.pagination import PageNumberPagination
 from django.db import connection
 from django.db import transaction
 from rest_framework import status
+from rest_framework_simplejwt.authentication import JWTStatelessUserAuthentication
+from rest_framework.permissions import IsAuthenticated
 
 class CustomPagination(PageNumberPagination):
     page_size = 10
@@ -13,6 +15,8 @@ class CustomPagination(PageNumberPagination):
 
 class ConsultaSQLView(APIView):
     pagination_class = CustomPagination
+    authentication_classes = [JWTStatelessUserAuthentication]
+    permission_classes = [IsAuthenticated]
 
     def get(self, request, fecha_inicio, fecha_fin):
         try:
@@ -88,6 +92,7 @@ class ConsultaSQLView(APIView):
             return Response({'error': str(e)}, status=500)
         
     def post(self, request):
+        
         try:
             registros = request.data  
 
@@ -111,6 +116,8 @@ class ConsultaSQLView(APIView):
 
 class ListarReportadosView(APIView):
     pagination_class = CustomPagination
+    authentication_classes = [JWTStatelessUserAuthentication]
+    permission_classes = [IsAuthenticated]
 
     def get(self, request, fecha_inicio, fecha_fin):
         try:
@@ -192,6 +199,8 @@ class ListarReportadosView(APIView):
         
 class ServicioXAmbitoListAPIView(APIView):
     pagination_class = CustomPagination
+    authentication_classes = [JWTStatelessUserAuthentication]
+    permission_classes = [IsAuthenticated]
 
     def get(self, request):
         try:
@@ -218,6 +227,8 @@ class ServicioXAmbitoListAPIView(APIView):
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 class ServicioXAmbitoCreateAPIView(APIView):
+    authentication_classes = [JWTStatelessUserAuthentication]
+    permission_classes = [IsAuthenticated]
     def post(self, request):
         try:
             CodigoRef = request.data.get('CodigoRef')
@@ -234,6 +245,8 @@ class ServicioXAmbitoCreateAPIView(APIView):
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 class ServicioXAmbitoUpdateAPIView(APIView):
+    authentication_classes = [JWTStatelessUserAuthentication]
+    permission_classes = [IsAuthenticated]
     def put(self, request):
         try:
             id = int(request.data.get('id'))
@@ -252,6 +265,8 @@ class ServicioXAmbitoUpdateAPIView(APIView):
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 class ServicioXAmbitoDetailAPIView(APIView):
+    authentication_classes = [JWTStatelessUserAuthentication]
+    permission_classes = [IsAuthenticated]
     def get(self, request, pk):
         try:
             with connection.cursor() as cursor:

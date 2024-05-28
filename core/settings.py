@@ -151,7 +151,7 @@ REST_FRAMEWORK = {
 
 AUTHENTICATION_BACKENDS = [
     'usuarios_pgp.authentication.CustomBackend',
-    'django.contrib.auth.backends.ModelBackend',
+    #'django.contrib.auth.backends.ModelBackend',
 ]
 
 SIMPLE_JWT = {

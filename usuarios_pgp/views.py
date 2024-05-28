@@ -7,7 +7,8 @@ from django.db import connection
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import authenticate
-
+from rest_framework_simplejwt.authentication import JWTStatelessUserAuthentication
+from rest_framework.permissions import IsAuthenticated
 
 
 class CustomPagination(PageNumberPagination):
@@ -17,6 +18,8 @@ class CustomPagination(PageNumberPagination):
 
 class UsuarioPgpListAPIView(APIView):
     pagination_class = CustomPagination
+    authentication_classes = [JWTStatelessUserAuthentication]
+    permission_classes = [IsAuthenticated]
 
     def get(self, request):
         try:
@@ -32,6 +35,8 @@ class UsuarioPgpListAPIView(APIView):
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 class UsuarioPgpCreateAPIView(APIView):
+    authentication_classes = [JWTStatelessUserAuthentication]
+    permission_classes = [IsAuthenticated]
     def post(self, request):
         data = request.data
         data['clave'] = make_password(data['clave'])
@@ -49,6 +54,8 @@ class UsuarioPgpCreateAPIView(APIView):
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 class UsuarioPgpUpdateAPIView(APIView):
+    authentication_classes = [JWTStatelessUserAuthentication]
+    permission_classes = [IsAuthenticated]
     def put(self, request, pk):
         data = request.data
         data['clave'] = make_password(data['clave'])
@@ -67,6 +74,8 @@ class UsuarioPgpUpdateAPIView(APIView):
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 class UsuarioPgpDetailAPIView(APIView):
+    authentication_classes = [JWTStatelessUserAuthentication]
+    permission_classes = [IsAuthenticated]
     def get(self, request, pk):
         try:
             with connection.cursor() as cursor:
